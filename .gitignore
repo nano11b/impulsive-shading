@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+build/
+*.user
+out/
+site/lxc/__pycache__/
+site/lxc/*.zip
+site/lxc/*.tar.gz
+site/lxc/*.sha256
+*.pyc
+site/benchmark-results/
+site/benchmark-results.tar.gz

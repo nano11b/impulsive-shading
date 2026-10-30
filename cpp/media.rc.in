@@ -1,0 +1,2 @@
+101 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/cpp/data/logo_spin_frames.bin"
+102 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/cpp/data/logo_spin_audio.mp3"

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Impulsive Shading Benchmarks</title>
+<meta name="description" content="GPU benchmark results for Impulsive Shading">
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,Segoe UI,sans-serif;color:#e8edf7;background:#090d16}*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 75% -10%,#25315b 0%,transparent 45%),#090d16;min-height:100vh}
+.wrap{max-width:1200px;margin:auto;padding:32px 28px 80px}.top{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #273249;padding-bottom:25px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:750;letter-spacing:.025em}.mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#f56b7c,#8065ff 65%,#62c7e8);box-shadow:0 0 25px #a76aff66}
+nav{display:flex;align-items:center;gap:20px;font-size:13px;color:#bac7dd}nav a{text-decoration:none;color:inherit}nav a:hover{text-decoration:underline}
+.eyebrow{color:#a9b6d0;font-size:12px;letter-spacing:.17em;text-transform:uppercase}.hero{display:flex;align-items:end;justify-content:space-between;gap:30px;padding:58px 0 47px}
+h1{font-size:clamp(38px,6vw,70px);line-height:1.03;letter-spacing:-.055em;margin:12px 0 17px}h1 span{background:linear-gradient(90deg,#ff8597,#ab99ff,#83d7eb);background-clip:text;color:transparent}
+.intro{color:#a7b4ca;max-width:630px;line-height:1.6;margin:0}.pill{border:1px solid #384763;border-radius:100px;padding:10px 14px;color:#ccd6e8;font-size:13px;white-space:nowrap;background:#151d2d}
+.sectionhead{display:flex;justify-content:space-between;gap:20px;align-items:center;margin:8px 0 18px}h2{font-size:18px;margin:0}.meta{color:#8796af;font-size:13px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}input,select,button{font:inherit}input,select{background:#111827;color:#e8edf7;border:1px solid #344159;border-radius:9px;padding:11px 13px}input{flex:1;min-width:230px}select{min-width:190px}
+button{background:#202d46;color:#e8edf7;border:1px solid #465672;border-radius:9px;padding:10px 14px;cursor:pointer}button:hover{background:#30405e}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #af9dff;outline-offset:2px}
+.empty,.error{padding:50px 30px;border:1px solid #2b3750;border-radius:17px;background:#111827;color:#adbad0;text-align:center}.error{color:#ff9bae}.cards{display:grid;gap:14px}
+.card{background:linear-gradient(120deg,#151e30,#111827);border:1px solid #2b3952;border-radius:16px;padding:22px;display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(105px,.6fr));gap:20px;align-items:center}
+.shader{font-size:19px;font-weight:700;line-height:1.3}.sub{color:#91a0b9;font-size:12px;margin-top:8px;line-height:1.5;overflow-wrap:anywhere}
+.value{font-size:24px;font-weight:750;letter-spacing:-.04em;font-variant-numeric:tabular-nums}.label{font-size:11px;color:#8b9bb5;text-transform:uppercase;letter-spacing:.1em;margin-top:5px}.fps{color:#a0eecb}
+.footer{border-top:1px solid #273249;margin-top:44px;padding-top:23px;color:#7e8da6;font-size:12px;line-height:1.6}
+@media(max-width:750px){.hero{display:block;padding:42px 0 35px}.pill{display:inline-block;margin-top:22px}.card{grid-template-columns:repeat(3,1fr);gap:17px}.card>div:first-child{grid-column:1/-1}.value{font-size:20px}}
+</style></head><body><div class="wrap">
+<header class="top"><div class="brand"><span class="mark" aria-hidden="true"></span>IMPULSIVE SHADING</div><nav aria-label="Main navigation"><a href="/" aria-current="page">Results</a><a href="/download">Download</a></nav></header>
+<section class="hero"><div><div class="eyebrow">Local hardware · real render loop</div><h1>Shader <span>benchmarks.</span></h1><p class="intro">Frame times measured on the computer running Impulsive Shading. Compare shader performance across GPUs, with resolution and driver details alongside every run.</p></div><div class="pill" id="count">Loading results…</div></section>
+<main><div class="sectionhead"><h2>Recorded results</h2><span class="meta">Average FPS · median and 95th percentile frame time</span></div>
+<div class="toolbar"><input id="search" type="search" placeholder="Search shader or GPU" aria-label="Search shader or GPU"><select id="gpu" aria-label="Filter GPU"><option value="">All GPUs</option></select><button id="refresh" type="button">Refresh</button></div>
+<div id="results" class="empty" role="status">Loading benchmark reports…</div></main>
+<div class="footer">Measured at 1280 × 720 with VSync off. FPS is total measured frames divided by elapsed time. Frame times include rendering, GPU completion, and buffer swap. Community results are self-reported and are not independently verified.</div>
+</div><script>
+const state={runs:[]},box=document.getElementById('results'),search=document.getElementById('search'),gpu=document.getElementById('gpu');
+const fmt=(n,d=1)=>Number.isFinite(n)?n.toFixed(d):'—';
+function el(tag,cls,text){const node=document.createElement(tag);node.className=cls||'';if(text!==undefined)node.textContent=text;return node}
+function render(){
+ const q=search.value.trim().toLowerCase(),selected=gpu.value;
+ const entries=state.runs.flatMap(run=>(run.results||[]).map(result=>({run,result})))
+  .filter(({run,result})=>(!selected||run.gpu_renderer===selected)&&(!q||(run.gpu_renderer+' '+result.shader_name+' '+result.shader_id).toLowerCase().includes(q)))
+  .sort((a,b)=>(b.run.received_at||'').localeCompare(a.run.received_at||''));
+ box.replaceChildren();box.className=entries.length?'cards':'empty';
+ if(!entries.length){box.textContent=state.runs.length?'No results match your filters.':'No benchmark reports yet. Run the benchmark and upload its JSON report to see results here.';return}
+ for(const {run,result} of entries){const m=result.metrics||{},card=el('article','card'),title=el('div');
+  title.append(el('div','shader',result.shader_name||result.shader_id||'Unknown shader'));
+  const date=run.received_at?new Date(run.received_at).toLocaleString():'Unknown date';
+  title.append(el('div','sub',(result.shader_id||'')+' · '+(run.gpu_renderer||'Unknown GPU')+' · '+date+' · '+(run.resolution?.width||'?')+'×'+(run.resolution?.height||'?')+' · '+(run.opengl_version||'Unknown driver')));
+  card.append(title);
+  for(const [value,label,cls] of [[fmt(m.average_fps,0),'Average FPS','fps'],[fmt(m.median_frame_ms,2)+' ms','Median frame',''],[fmt(m.p95_frame_ms,2)+' ms','95th percentile','']]){
+   const stat=el('div');stat.append(el('div','value '+cls,value),el('div','label',label));card.append(stat)}
+  box.append(card)}
+}
+async function load(){box.className='empty';box.textContent='Loading benchmark reports…';
+ try{const response=await fetch('/api/reports',{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);
+  const data=await response.json();state.runs=data.reports||[];
+  document.getElementById('count').textContent=state.runs.length+' recorded run'+(state.runs.length===1?'':'s');
+  const selected=gpu.value;gpu.replaceChildren(new Option('All GPUs',''));
+  for(const name of [...new Set(state.runs.map(x=>x.gpu_renderer).filter(Boolean))].sort())gpu.add(new Option(name,name));
+  gpu.value=selected;render()}catch(error){box.className='error';box.textContent='Could not load reports: '+error.message}}
+search.addEventListener('input',render);gpu.addEventListener('change',render);document.getElementById('refresh').addEventListener('click',load);load();
+</script></body></html>

@@ -1,0 +1,24 @@
+[Unit]
+Description=Impulsive Shading benchmark results
+After=network.target
+
+[Service]
+Type=simple
+User=marks
+Group=marks
+WorkingDirectory=/opt/impulsive-marks
+Environment=MARKS_HOST=0.0.0.0
+Environment=MARKS_PORT=8096
+Environment=MARKS_DATA_DIR=/var/lib/impulsive-marks/reports
+Environment=MARKS_TOKEN_FILE=/etc/impulsive-marks/upload-token
+ExecStart=/usr/bin/python3 /opt/impulsive-marks/server.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/impulsive-marks
+
+[Install]
+WantedBy=multi-user.target
