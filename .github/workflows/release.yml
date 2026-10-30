@@ -1,0 +1,64 @@
+name: Release downloads
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+permissions:
+  contents: write
+jobs:
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libasound2-dev libpulse-dev
+      - name: Build
+        run: |
+          cmake -S . -B out -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build out --target ImpulsiveShading
+      - name: Package
+        run: |
+          sh site/lxc/build-linux-package.sh "$PWD" "$PWD/Impulsive-Shading-Benchmark-Linux-x86_64.tar.gz"
+          sha256sum Impulsive-Shading-Benchmark-Linux-x86_64.tar.gz > Impulsive-Shading-Benchmark-Linux-x86_64.tar.gz.sha256
+          printf '%s\n' "$GITHUB_REF_NAME" > version.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-release
+          path: |
+            Impulsive-Shading-Benchmark-Linux-x86_64.tar.gz
+            Impulsive-Shading-Benchmark-Linux-x86_64.tar.gz.sha256
+            version.txt
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+          cmake --build build --config Release --target ImpulsiveShading
+      - name: Package
+        shell: pwsh
+        run: |
+          & .\site\lxc\build-download.ps1
+          Copy-Item site\lxc\Impulsive-Shading-Benchmark-Win64.zip .
+          Copy-Item site\lxc\download.sha256 Impulsive-Shading-Benchmark-Win64.zip.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            Impulsive-Shading-Benchmark-Win64.zip
+            Impulsive-Shading-Benchmark-Win64.zip.sha256
+  publish:
+    if: github.event_name == 'release'
+    needs: [linux, windows]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-release'
+          merge-multiple: true
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" Impulsive-Shading-Benchmark-Win64.zip Impulsive-Shading-Benchmark-Win64.zip.sha256 Impulsive-Shading-Benchmark-Linux-x86_64.tar.gz Impulsive-Shading-Benchmark-Linux-x86_64.tar.gz.sha256 version.txt --repo "$GITHUB_REPOSITORY" --clobber
